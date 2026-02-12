@@ -197,3 +197,50 @@ Indexes:
 ```sql
 CREATE INDEX IF NOT EXISTS idx_notes_trip_id ON notes(trip_id);
 ```
+
+## Budget tracker (new)
+
+Planned budgets live in `budget_categories`. Actual spend is logged as rows in `budget_expenses`.
+Expenses are tied to a trip and optionally to a category; if a category is deleted, expenses become uncategorized.
+
+### budget_categories
+
+```sql
+CREATE TABLE IF NOT EXISTS budget_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  planned_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+  color TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(trip_id, name)
+);
+```
+
+Indexes:
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_budget_categories_trip_id ON budget_categories(trip_id);
+```
+
+### budget_expenses
+
+```sql
+CREATE TABLE IF NOT EXISTS budget_expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  category_id UUID REFERENCES budget_categories(id) ON DELETE SET NULL,
+  amount NUMERIC(12,2) NOT NULL,
+  spent_on DATE,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+Indexes:
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_budget_expenses_trip_id ON budget_expenses(trip_id);
+CREATE INDEX IF NOT EXISTS idx_budget_expenses_category_id ON budget_expenses(category_id);
+```
